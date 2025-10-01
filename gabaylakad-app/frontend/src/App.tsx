@@ -3,6 +3,10 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import ProfilePage from './pages/Profile';
+import HistoryPage from './pages/History';
+import LocationPage from './pages/Location';
+import SensorPage from './pages/Sensor';
 import Verify from './pages/Verify';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -28,6 +32,8 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 const App: React.FC = () => {
+    const [sidebarExpanded, setSidebarExpanded] = React.useState(false);
+    const handleSidebarExpand = (expanded: boolean) => setSidebarExpanded(expanded);
     return (
         <ErrorBoundary>
             <Router>
@@ -35,7 +41,11 @@ const App: React.FC = () => {
                     <Route path="/" element={<Login />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-                    { <Route path="/dashboard" element={<Dashboard />} /> }
+                    <Route path="/dashboard" element={<Dashboard sidebarExpanded={sidebarExpanded} setSidebarExpanded={handleSidebarExpand} />} />
+                    <Route path="/profile" element={<ProfilePage sidebarExpanded={sidebarExpanded} setSidebarExpanded={handleSidebarExpand} />} />
+                    <Route path="/history" element={<HistoryPage sidebarExpanded={sidebarExpanded} setSidebarExpanded={handleSidebarExpand} />} />
+                    <Route path="/location" element={<LocationPage sidebarExpanded={sidebarExpanded} setSidebarExpanded={handleSidebarExpand} />} />
+                    <Route path="/sensor" element={<SensorPage sidebarExpanded={sidebarExpanded} setSidebarExpanded={handleSidebarExpand} />} />
                     <Route path="/verify" element={<Verify />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />

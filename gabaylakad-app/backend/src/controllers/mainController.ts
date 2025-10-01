@@ -1,3 +1,34 @@
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const {
+      first_name,
+      last_name,
+      phone_number,
+      email,
+      relationship,
+      blind_full_name,
+      blind_phone_number,
+      blind_age,
+      impairment_level,
+      device_id
+    } = req.body;
+    // Update user profile fields
+    await query(
+      `UPDATE user SET first_name = ?, last_name = ?, phone_number = ?, email = ?, relationship = ?, blind_full_name = ?, blind_phone_number = ?, blind_age = ?, impairment_level = ?, device_id = ? WHERE user_id = ?`,
+      [first_name, last_name, phone_number, email, relationship, blind_full_name, blind_phone_number, blind_age, impairment_level, device_id, userId]
+    );
+    // Return updated profile
+    const result = await query('SELECT * FROM user WHERE user_id = ?', [userId]);
+    const user = Array.isArray(result.rows) ? result.rows[0] : null;
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Database error', error });
+  }
+};
 import { Request, Response } from 'express';
 import { query } from '../utils/db';
 
@@ -67,16 +98,22 @@ export const profile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     if (!userId) {
+      console.error('[PROFILE] Unauthorized: No userId in token. Raw req.user:', req.user);
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    const result = await query('SELECT id, fullName AS name, email, phone_number AS phone FROM user WHERE id = ?', [userId]);
+    const result = await query(
+      'SELECT user_id, blind_full_name, blind_age, blind_phone_number, impairment_level, email, device_id, name, first_name, last_name, phone_number, relationship FROM user WHERE user_id = ?',
+      [userId]
+    );
     const rows = Array.isArray(result.rows) ? result.rows : [];
     const user = rows[0];
     if (!user) {
+      console.error('[PROFILE] User not found for userId:', userId);
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json({ message: 'Profile data', user });
+    res.json(user);
   } catch (error) {
+    console.error('[PROFILE] Database error:', error, '\nRequest headers:', req.headers, '\nRequest body:', req.body);
     res.status(500).json({ message: 'Database error', error });
   }
 };

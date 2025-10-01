@@ -62,7 +62,11 @@ const Sidebar: React.FC<SidebarProps> = ({ expanded, setExpanded }) => {
         <ul>
           {navTabs.map(tab => (
             <li key={tab.key} className="sidebar-item">
-              <button className={`sidebar-link`} aria-label={tab.label}>
+              <button
+                className={`sidebar-link`}
+                aria-label={tab.label}
+                onClick={() => navigate(`/${tab.key}`)}
+              >
                 <i className={tab.icon} aria-hidden></i>
                 <span className="sidebar-label">{tab.label}</span>
               </button>

@@ -44,11 +44,65 @@ export const exportPDF = (activityLog: ActivityLogItem[]) => {
 
 const ExportButtons: React.FC<ExportProps> = ({ activityLog }) => (
   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-    <button className="btn-primary" onClick={() => exportCSV(activityLog)}>
-      <i className="fas fa-file-csv"></i> Export CSV
+    <button
+      className="btn-primary export-btn"
+      style={{
+        background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '1rem',
+        boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+        fontWeight: 600,
+        fontSize: '1rem',
+        padding: '0.7rem 1.7rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.7rem',
+        cursor: 'pointer',
+        transition: 'background 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #5ee7df 0%, #b490ca 100%)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(44,62,80,0.18)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(44,62,80,0.10)';
+      }}
+      onClick={() => exportCSV(activityLog)}
+    >
+      <i className="fas fa-file-csv" style={{ fontSize: '1.2em', color: '#ffe082' }}></i>
+      Export CSV
     </button>
-    <button className="btn-primary" onClick={() => exportPDF(activityLog)}>
-      <i className="fas fa-file-pdf"></i> Export PDF
+    <button
+      className="btn-primary export-btn"
+      style={{
+        background: 'linear-gradient(90deg, #ff9966 0%, #ff5e62 100%)',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '1rem',
+        boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+        fontWeight: 600,
+        fontSize: '1rem',
+        padding: '0.7rem 1.7rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.7rem',
+        cursor: 'pointer',
+        transition: 'background 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #f857a6 0%, #ff5858 100%)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(44,62,80,0.18)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #ff9966 0%, #ff5e62 100%)';
+        (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(44,62,80,0.10)';
+      }}
+      onClick={() => exportPDF(activityLog)}
+    >
+      <i className="fas fa-file-pdf" style={{ fontSize: '1.2em', color: '#ffe082' }}></i>
+      Export PDF
     </button>
   </div>
 );

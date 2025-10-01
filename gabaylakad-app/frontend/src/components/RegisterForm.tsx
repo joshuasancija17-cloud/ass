@@ -105,7 +105,7 @@ const RegisterForm: React.FC = () => {
                     device_id: deviceId,
                     relationship: rel,
                     blind_full_name: userFullName,
-                    blind_age: userAge,
+                    blind_age: userAge, 
                     blind_phone_number: userPhoneNumber
                 }),
             });
