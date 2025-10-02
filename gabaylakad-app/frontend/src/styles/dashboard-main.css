@@ -1,3 +1,308 @@
+/* Force mobile header layout to override conflicting media queries */
+@media (max-width: 600px) {
+  .dashboard-header-mobile {
+    width: 100vw !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.7rem 1rem 0.7rem 0.3rem !important;
+    box-sizing: border-box !important;
+    gap: 0 !important;
+  }
+}
+/* Responsive Design Enhancements */
+
+@media (max-width: 1200px) {
+  .dashboard-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 900px) {
+  .dashboard-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    padding: 0;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+}
+@media (max-width: 900px) {
+  .dashboard-header { 
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.2rem 1.2rem;
+    font-size: 1.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-header {
+    padding: 0.7rem 0.7rem;
+    font-size: 1.1rem;
+  }
+}
+@media (max-width: 900px) {
+  .patient-info-section {
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1.2rem 1rem;
+  }
+}
+@media (max-width: 600px) {
+  .patient-info-section {
+    flex-direction: column;
+    gap: 0.7rem;
+    padding: 0.7rem 0.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-info-avatar, .patient-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.2rem;
+  }
+}
+@media (max-width: 900px) {
+  .dashboard-info-details, .patient-details {
+    width: 100%;
+    min-width: 0;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-info-name, .patient-details h2, .patient-details h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+  }
+}
+/* General mobile/iPhone 12 Pro overrides */
+@media (max-width: 430px) {
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    font-size: 80%;
+  }
+  .dashboard-container {
+    padding: 0.5rem 0.2rem;
+    min-width: 0;
+    width: 100vw;
+    box-sizing: border-box;
+  }
+  .dashboard-header {
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0.7rem 0.3rem;
+    font-size: 1rem;
+    gap: 0.5rem;
+    position: relative;
+  }
+  .dashboard-header .hamburger {
+    display: flex !important;
+    position: absolute;
+    left: 0.3rem;
+    top: 0.7rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 1001;
+  }
+  .dashboard-header-title {
+    margin-left: 2.2rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .dashboard-header-user {
+    flex-direction: row;
+    align-items: center;
+    position: absolute;
+    right: 0.3rem;
+    top: 0.7rem;
+    gap: 0.5rem;
+  }
+  .dashboard-header-profile {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 2.2rem;
+    font-size: 0.9rem;
+  }
+  .patient-info-section {
+    flex-direction: column;
+    width: 100vw;
+    padding: 0.7rem 0.2rem;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    border-radius: 12px;
+  }
+  .dashboard-info-avatar, .patient-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1rem;
+  }
+  .dashboard-info-details, .patient-details {
+    font-size: 0.9rem;
+    min-width: 0;
+    width: 100%;
+  }
+  .dashboard-info-name, .patient-details h2, .patient-details h3 {
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+  }
+  .dashboard-info-meta, .patient-details p {
+    font-size: 0.8rem;
+    margin-bottom: 0.1rem;
+  }
+  .dashboard-info-contact, .device-badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+    margin-top: 0.3rem;
+  }
+  .export-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0.5rem 0 0 0;
+    width: 100%;
+  }
+  .status-grid-full {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+    margin-bottom: 0.7rem;
+  }
+  .dashboard-card {
+    width: 100vw;
+    min-width: 0;
+    padding: 0.5rem 0.2rem;
+    height: auto;
+    max-height: none;
+    font-size: 0.9rem;
+    margin-bottom: 0.7rem;
+    border-radius: 12px;
+  }
+  .dashboard-card-title {
+    font-size: 0.8rem;
+  }
+  .dashboard-card-value {
+    font-size: 1.2rem;
+  }
+  .dashboard-card-meta, .card-trend {
+    font-size: 0.8rem;
+  }
+  .activity-log {
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0.2rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.7rem;
+    border-radius: 12px;
+  }
+  .activity-log-title {
+    text-align: center;
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+  }
+  .activity-item-content {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5rem 0.2rem;
+  }
+  .activity-icon {
+    margin-bottom: 0.3rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+  .section-divider {
+    margin: 0.5rem 0;
+  }
+  .export-buttons button {
+    width: 90vw;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.2rem;
+    border-radius: 10px;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-info-meta, .patient-details p {
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-info-contact, .device-badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    margin-top: 0.5rem;
+  }
+}
+  .status-row {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 0.7rem;
+  }
+  .status-row.single {
+    width: 100%;
+  }
+  .status-row .dashboard-card {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+  @media (max-width: 430px) {
+    .status-row {
+      flex-direction: row;
+      gap: 0.5rem;
+      width: 100vw;
+      margin-bottom: 0.5rem;
+    }
+    .status-row .dashboard-card {
+      flex: 1 1 0;
+      min-width: 0;
+      width: 50vw;
+      max-width: 50vw;
+      margin-bottom: 0;
+      padding: 0.5rem 0.2rem;
+      font-size: 0.9rem;
+      border-radius: 10px;
+    }
+    .status-row.single .dashboard-card {
+      width: 100vw;
+      max-width: 100vw;
+      border-radius: 12px;
+    }
+  }
+@media (max-width: 900px) {
+  .status-grid-full {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+@media (max-width: 900px) {
+  .dashboard-card {
+    padding: 1rem 0.7rem;
+    min-width: 0;
+    height: auto;
+    max-height: none;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-card {
+    padding: 0.7rem 0.3rem;
+    min-width: 0;
+    height: auto;
+    max-height: none;
+  }
+}
+@media (max-width: 600px) {
+  .section-divider {
+    margin: 1rem 0;
+  }
+}
 /* Activity Log Custom Styles */
 
 

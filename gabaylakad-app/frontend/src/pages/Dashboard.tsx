@@ -5,83 +5,30 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import ExportButtons from '../components/ExportButtons';
 
 // TypeScript interfaces for dashboard data
+
 interface Patient {
   name: string;
   age: number;
-  impairment_level: string;
-  serial_number: string;
-  device_active: boolean;
-}
-interface Caregiver {
-  name: string;
-  phone_number: string;
-}
-interface DashboardData {
-  user: Patient;
-  caregiver: Caregiver;
-  lastSync: string;
-  currentLocation: string;
-  locationUpdate: string;
-  batteryLevel: string;
-  batteryTime: string;
-  activityText: string;
-  stepCount: string;
-  activityLog: Array<{ title: string; details: string; time: string; icon: string; color: string }>;
 }
 
-
-const fetchDashboardData = async (): Promise<any> => {
-  // Helper to send error logs to backend
-  const sendLogToBackend = async (msg: string) => {
-    try {
-      await fetch('http://localhost:5000/api/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
-      });
-    } catch (err) {
-      // Ignore backend log errors
+// Fetch dashboard data from backend
+async function fetchDashboardData() {
+  try {
+    const res = await fetch('/api/dashboard', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    const data = await res.json();
+    // If token expired due to inactivity, throw special error
+    if (data && data.error && data.error.name === 'TokenExpiredError') {
+      throw new Error('INACTIVE_LOGOUT');
     }
-  };
-  const token = localStorage.getItem('token');
-  const authHeader = token ? `Bearer ${token}` : '';
-  console.log('[DASHBOARD] Token in localStorage:', token);
-  console.log('[DASHBOARD] Authorization header to be sent:', authHeader);
-  if (!token) {
-    console.warn('[DASHBOARD] No token found in localStorage. Redirecting to login.');
+    return data;
+  } catch (err) {
+    return { error: 'Unable to load dashboard. Please try again.' };
   }
-  const res = await fetch('http://localhost:5000/api/dashboard', {
-    headers: {
-      'Authorization': authHeader,
-      'Content-Type': 'application/json',
-    },
-  });
-  // Store new token if present (sliding expiration)
-  const refreshedToken = res.headers.get('X-Refreshed-Token');
-  if (refreshedToken && refreshedToken !== localStorage.getItem('token')) {
-    localStorage.setItem('token', refreshedToken);
-    console.log('[DASHBOARD] Refreshed token received and saved.');
-  }
-  // Log custom error/info headers from backend to browser console
-  const loginError = res.headers.get('X-Login-Error');
-  const loginInfo = res.headers.get('X-Login-Info');
-  if (loginError) {
-    console.error('[DASHBOARD] Backend error:', loginError);
-    sendLogToBackend('[DASHBOARD] Backend error: ' + loginError);
-  }
-  if (loginInfo) {
-    console.log('[DASHBOARD] Backend info:', loginInfo);
-    sendLogToBackend('[DASHBOARD] Backend info: ' + loginInfo);
-  }
-  const data = await res.json();
-  console.log('[DASHBOARD] API response:', data);
-  sendLogToBackend('[DASHBOARD] API response: ' + JSON.stringify(data));
-  // If token expired due to inactivity, throw special error
-  if (data && data.error && data.error.name === 'TokenExpiredError') {
-    throw new Error('INACTIVE_LOGOUT');
-  }
-  return data;
-};
+}
 
 
 interface DashboardProps {
@@ -89,65 +36,59 @@ interface DashboardProps {
   setSidebarExpanded: (expanded: boolean) => void;
 }
 
+// Custom hook to detect mobile viewport
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 430);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 430);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return isMobile;
+}
+
 const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
   const [data, setData] = useState<any>(null);
-  // Inactivity timer state
   const [inactiveTimeoutId, setInactiveTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-
-  // Fetch dashboard data on mount
   useEffect(() => {
     fetchDashboardData()
       .then((result) => {
-        console.log('[DASHBOARD] Data received from API:', result);
         setData(result);
       })
       .catch((err) => {
-        console.error('[DASHBOARD] Error fetching dashboard data:', err);
         setData({ error: 'Unable to load dashboard. Please try again.' });
       });
   }, []);
 
-  // Inactivity logout logic
   useEffect(() => {
-    // Handler to reset inactivity timer
     const resetInactivityTimer = () => {
       if (inactiveTimeoutId) clearTimeout(inactiveTimeoutId);
       const timeoutId = setTimeout(() => {
-        // Show deep loading for 4 seconds, then check token
         setData('INACTIVE_DEEP_LOADING');
         setTimeout(() => {
           const token = localStorage.getItem('token');
           if (!token) {
-            window.location.href = '/'; // Redirect to login
+            window.location.href = '/';
           } else {
-            // If token exists, reload dashboard
             window.location.reload();
           }
         }, 4000);
       }, INACTIVITY_LIMIT);
       setInactiveTimeoutId(timeoutId);
     };
-
-    // List of events that count as activity
     const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
     activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer));
-
-    // Start timer on mount
     resetInactivityTimer();
-
-    // Cleanup on unmount
     return () => {
       if (inactiveTimeoutId) clearTimeout(inactiveTimeoutId);
       activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-
-  // Handler for sidebar hover/touch
-  // No longer needed, use setSidebarExpanded from props
 
 
   // Deep loading: show loading spinner for any error or unauthorized state
@@ -231,172 +172,343 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
 
   return (
     <div className="dashboard-container">
-      <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} />
-      <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"}>
-        <div className="dashboard-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-  <h1>Monitoring Dashboard</h1>
-  <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
-    {/* Alerts & Safety Icon with Tooltip */}
-    <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-    </div>
-    <div style={{position: 'relative', display: 'inline-block'}}>
-      <i 
-        className="fas fa-bell" 
-        style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer'}} 
-        onMouseEnter={e => {
-          const tooltip = e.currentTarget.nextSibling as HTMLElement;
-          if (tooltip) tooltip.style.opacity = '1';
-        }} 
-        onMouseLeave={e => {
-          const tooltip = e.currentTarget.nextSibling as HTMLElement;
-          if (tooltip) tooltip.style.opacity = '0';
-        }}
-      ></i>
-      <span style={{
-        position: 'absolute',
-        right: '110%',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        background: '#232946',
-        color: '#fff',
-        padding: '6px 16px',
-        borderRadius: '8px',
-        fontWeight: 'bold',
-        fontSize: '1rem',
-        whiteSpace: 'nowrap',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-        opacity: 0,
-        transition: 'opacity 0.2s',
-        pointerEvents: 'none',
-        zIndex: 10
-      }}>Alerts & Safety</span>
-    </div>
-
-    {/* User Name & Relationship */}
-    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
-      {/* Full Name */}
-      <span style={{fontWeight: 'bold', fontSize: '1.1rem', color: '#232946'}}>
-        {user?.first_name || ''} {user?.last_name || ''}
-      </span>
-
-      {/* Relationship */}
-      {user?.relationship && (
-        <span style={{
-          marginTop: 1,
-          right: '50px',   // 👈 only relationship shifts left
-          background: 'rgba(44,62,80,0.08)',
-          borderRadius: '1rem',
-          padding: '0.13rem 0.8rem',
-          fontWeight: 600,
-          fontSize: '0.98rem',
-          color: '#2c3e50',
-          letterSpacing: 0.2,
-          display: 'inline-block',
-          maxWidth: 90,
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {user.relationship}
-        </span>
+      {/* Mobile sidebar overlay logic */}
+      {isMobile ? (
+        <>
+          {sidebarOpen && (
+            <>
+              <div
+                className="sidebar-overlay"
+                onClick={() => setSidebarOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0, left: 0, width: '100vw', height: '100vh',
+                  background: 'rgba(0,0,0,0.3)', zIndex: 1000
+                }}
+              />
+              <div style={{position: 'fixed', top: 0, left: 0, height: '100vh', width: '220px', zIndex: 1001, background: '#232946'}}>
+                <Sidebar expanded={true} setExpanded={() => {}} />
+                <button
+                  className="close-btn"
+                  onClick={() => setSidebarOpen(false)}
+                  style={{
+                    position: 'absolute', top: 12, right: 12, fontSize: '1.5rem',
+                    background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 1002
+                  }}
+                  aria-label="Close sidebar"
+                >
+                  &times;
+                </button>
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} />
       )}
-    </div>
-  </div>
-</div>
-
-
+      <main className={isMobile ? "main-content-full" : sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { padding: 0, margin: 0, width: '100vw', minWidth: 0, maxWidth: '100vw', boxSizing: 'border-box', overflowX: 'hidden' } : {}}>
+  <div className="dashboard-header" style={isMobile ? { width: '100%', margin: 0, padding: '0.7rem 0.7rem', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflowX: 'hidden' } : {display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          {/* Hamburger, bell, and status badge in a single right-aligned row for mobile */}
+          {isMobile ? (
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              padding: '0.7rem 0.5rem',
+              boxSizing: 'border-box',
+              gap: '1.2rem',
+              overflowX: 'hidden',
+            }}>
+              <button
+                className="hamburger"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open sidebar"
+                style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', color: '#232946' }}
+              >
+                &#9776;
+              </button>
+              <div style={{position: 'relative', display: 'inline-flex', alignItems: 'center'}}>
+                <i 
+                  className="fas fa-bell" 
+                  style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer', marginRight: '0.7rem'}} 
+                  onMouseEnter={e => {
+                    const tooltip = e.currentTarget.nextSibling as HTMLElement;
+                    if (tooltip) tooltip.style.opacity = '1';
+                  }} 
+                  onMouseLeave={e => {
+                    const tooltip = e.currentTarget.nextSibling as HTMLElement;
+                    if (tooltip) tooltip.style.opacity = '0';
+                  }}
+                ></i>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: user?.device_active ? 'linear-gradient(90deg, #43cea2 0%, #2ecc71 100%)' : 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)',
+                  borderRadius: '999px',
+                  padding: '0.5rem 1.2rem',
+                  fontSize: '1.1rem',
+                  color: '#fff',
+                  fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+                  letterSpacing: 0.2,
+                  maxWidth: '100%',
+                  minWidth: 0,
+                  overflow: 'visible',
+                  textOverflow: 'ellipsis',
+                  justifyContent: 'center',
+                  flexShrink: 1,
+                  flexBasis: 'auto',
+                  boxSizing: 'border-box',
+                  marginLeft: '0.20rem',
+                }}>
+                  <i className={user?.device_active ? 'fas fa-circle' : 'fas fa-circle-notch'} style={{marginRight: 5, color: user?.device_active ? '#2ecc71' : '#e74c3c'}}></i>
+                  {user?.device_active ? 'ONLINE' : 'OFFLINE'}
+                </span>
+                <span style={{
+                  position: 'absolute',
+                  right: '110%',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: '#232946',
+                  color: '#fff',
+                  padding: '6px 16px',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  opacity: 0,
+                  transition: 'opacity 0.2s',
+                  pointerEvents: 'none',
+                  zIndex: 10
+                }}>Alerts & Safety</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1>Monitoring Dashboard</h1>
+              <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+                {/* Alerts & Safety Icon with Tooltip */}
+                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                </div>
+                <div style={{position: 'relative', display: 'inline-block'}}>
+                  <i 
+                    className="fas fa-bell" 
+                    style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer'}} 
+                    onMouseEnter={e => {
+                      const tooltip = e.currentTarget.nextSibling as HTMLElement;
+                      if (tooltip) tooltip.style.opacity = '1';
+                    }} 
+                    onMouseLeave={e => {
+                      const tooltip = e.currentTarget.nextSibling as HTMLElement;
+                      if (tooltip) tooltip.style.opacity = '0';
+                    }}
+                  ></i>
+                  <span style={{
+                    position: 'absolute',
+                    right: '110%',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: '#232946',
+                    color: '#fff',
+                    padding: '6px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    whiteSpace: 'nowrap',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    pointerEvents: 'none',
+                    zIndex: 10
+                  }}>Alerts & Safety</span>
+                </div>
+                {/* Caregiver name and relationship in header for desktop */}
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
+                  <span style={{fontWeight: 'bold', fontSize: '1.1rem', color: '#232946'}}>
+                    {user?.first_name || ''} {user?.last_name || ''}
+                  </span>
+                  {user?.relationship && (
+                    <span style={{
+                      marginTop: 1,
+                      right: '50px',
+                      background: 'rgba(44,62,80,0.08)',
+                      borderRadius: '1rem',
+                      padding: '0.13rem 0.8rem',
+                      fontWeight: 600,
+                      fontSize: '0.98rem',
+                      color: '#2c3e50',
+                      letterSpacing: 0.2,
+                      display: 'inline-block',
+                      maxWidth: 90,
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {user.relationship}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+          {/* Bell notification icon for mobile (far right) */}
+        </div>
         {/* Enhanced Profile Card Section with Device Status */}
         <div
           className="dashboard-profile-card"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            background: 'linear-gradient(to right, #2a9fd6, #8e44ad)',
-            borderRadius: '2rem',
-            boxShadow: '0 8px 32px rgba(44,62,80,0.18)',
-            padding: '2.5rem 2.5rem 2.5rem 2rem',
-            margin: '2rem 0 1.5rem 0',
-            minHeight: '190px',
-            position: 'relative',
-            flexWrap: 'wrap',
-            fontFamily: 'Segoe UI, Open Sans, Roboto, Arial, sans-serif',
-          }}
-        >
-          {/* Export Buttons - top right above patient section */}
-          <div style={{ position: 'absolute', top: 220, right: 0, zIndex: 1 }}>
-            <ExportButtons activityLog={data?.activityLog || []} />
-          </div>
-          {/* Avatar */}
-          <div style={{
-            width: 100, 
-            height: 100,
-            borderRadius: '50%',
-            background: 'rgba(52, 152, 219, 0.85)',
-            boxShadow: '0 4px 24px rgba(44,62,80,0.18)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '2.5rem',
-            color: '#fff',
-            marginRight: '2.2rem',
-            marginBottom: '0.5rem',
-            flexShrink: 0,
-          }}>
-            <span>{(user?.blind_full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}</span>
-          </div>
-          {/* Details and Device Status + ExportButtons (responsive) */}
-          <div
-            style={{
+            style={isMobile ? {
               display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'linear-gradient(to right, #2a9fd6, #8e44ad)',
+              borderRadius: '2rem',
+              boxShadow: '0 8px 32px rgba(44,62,80,0.18)',
+              padding: '2rem 1rem',
+              margin: '2rem 0 1.5rem 0',
+              minHeight: '190px',
+              position: 'relative',
+              fontFamily: 'Segoe UI, Open Sans, Roboto, Arial, sans-serif',
+              width: 'calc(100vw - 2rem)',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
+            } : {
+              display: 'flex',
               alignItems: 'flex-start',
-              width: '100%',
-              flex: 1,
-              minWidth: 180,
+              background: 'linear-gradient(to right, #2a9fd6, #8e44ad)',
+              borderRadius: '2rem',
+              boxShadow: '0 8px 32px rgba(44,62,80,0.18)',
+              padding: '2.5rem 2.5rem 2.5rem 2rem',
+              margin: '2rem 0 1.5rem 0',
+              minHeight: '190px',
+              position: 'relative',
               flexWrap: 'wrap',
-              gap: '2rem',
+              fontFamily: 'Segoe UI, Open Sans, Roboto, Arial, sans-serif',
             }}
-          >
-            <div style={{display: 'flex', flexDirection: 'column', color: '#fff', flex: 1, minWidth: 180}}>
-              {/* Blind person's full name and condition */}
-              <span style={{fontWeight: 800, fontSize: '2.2rem', marginBottom: 2, letterSpacing: 0.5, color: '#fff', display: 'flex', alignItems: 'center', gap: 16}}>
-                {user?.blind_full_name || <span style={{fontStyle: 'italic', color: '#e0e0e0'}}>Name pending</span>}
-                {/* Condition beside name */}
-                <span style={{display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.18)', borderRadius: '1rem', padding: '0.2rem 0.9rem', fontWeight: 700, color: '#fff', fontSize: '1.05rem'}}>
-                  <i className="fas fa-eye" style={{marginRight: 7, color: '#f1c40f'}}></i>
-                  {user?.impairment_level || '-'}
-                </span>
-              </span>
-              {/* Age and phone number row */}
-              <span style={{fontSize: '1.1rem', fontWeight: 500, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 24}}>
-                <span style={{display: 'inline-flex', alignItems: 'center', fontWeight: 600, fontSize: '1.1rem'}}>
-                  <i className="fas fa-birthday-cake" style={{marginRight: 6, color: '#fff'}}></i>
-                  {user?.blind_age ? user.blind_age : <span style={{fontStyle: 'italic', color: '#e0e0e0'}}>Age pending</span>}
-                </span>
-                <span style={{display: 'inline-flex', alignItems: 'center'}}>
-                  <i className="fas fa-phone" style={{marginRight: 8, color: '#fff'}}></i>
-                  <span style={{transition: 'color 0.2s', cursor: 'pointer'}}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ffe082')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#fff')}
-                  >{user?.blind_phone_number || '-'}</span>
-                </span>
-              </span>
-              {/* Email as last row below age */}
-              <span style={{fontSize: '1.1rem', fontWeight: 500, marginBottom: 6, display: 'flex', alignItems: 'center'}}>
-                <i className="fas fa-envelope" style={{marginRight: 6, color: '#fff'}}></i>
-                <span style={{transition: 'color 0.2s', cursor: 'pointer'}} 
-                  onMouseEnter={e => (e.currentTarget.style.color = '#ffe082')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#fff')}
-                >{user?.email || '-'}</span>
-              </span>
-              {/* Pill-shaped connection button */}
-              <div style={{marginTop: '1.2rem', display: 'flex', alignItems: 'center'}}>
-                <span
-                  style={{
+        >
+          {/* Avatar, condition, device status for mobile; full info for desktop */}
+          {isMobile ? (
+            <>
+              {/* Avatar */}
+              <div style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(52, 152, 219, 0.85)',
+                boxShadow: '0 4px 24px rgba(44,62,80,0.18)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '2rem',
+                color: '#fff',
+                marginBottom: '1rem',
+              }}>
+                <span>{(user?.blind_full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}</span>
+              </div>
+              {/* Condition */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'rgba(255,255,255,0.18)',
+                borderRadius: '1rem',
+                padding: '0.2rem 0.9rem',
+                fontWeight: 700,
+                color: '#fff',
+                fontSize: '1.05rem',
+                marginBottom: '1rem',
+              }}>
+                <i className="fas fa-eye" style={{ marginRight: 7, color: '#f1c40f' }}></i>
+                {user?.impairment_level || '-'}
+              </div>
+              {/* Device status */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+                border: '1.5px solid rgba(255,255,255,0.35)',
+                borderRadius: '999px',
+                padding: '0.5rem 1.5rem',
+                fontSize: '1rem',
+                color: '#fff',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+                letterSpacing: 0.2,
+                minWidth: 220,
+                marginBottom: '0.5rem',
+              }}>
+                <i className="fas fa-person-walking-with-cane" style={{ marginRight: 10, fontSize: '1.2em' }}></i>
+                Smart Stick #{user?.device_serial_number || '--'} - Connected
+              </div>
+            </>
+          ) : (
+            // ...existing code for desktop view...
+            <>
+              <div style={{
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: 'rgba(52, 152, 219, 0.85)',
+                boxShadow: '0 4px 24px rgba(44,62,80,0.18)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '2.5rem',
+                color: '#fff',
+                marginRight: '2.2rem',
+                marginBottom: '0.5rem',
+                flexShrink: 0,
+              }}>
+                <span>{(user?.blind_full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', color: '#fff', flex: 1, minWidth: 180, width: '100%', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontWeight: 800,
+                      fontSize: '2.2rem',
+                      letterSpacing: 0.5,
+                      color: '#fff'
+                    }}>
+                      {user?.blind_full_name || <span style={{ fontStyle: 'italic', color: '#e0e0e0' }}>Name pending</span>}
+                    </span>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      background: 'rgba(255,255,255,0.18)',
+                      borderRadius: '1rem',
+                      padding: '0.2rem 0.9rem',
+                      fontWeight: 700,
+                      color: '#fff',
+                      fontSize: '1.05rem'
+                    }}>
+                      <i className="fas fa-eye" style={{ marginRight: 7, color: '#f1c40f' }}></i>
+                      {user?.impairment_level || '-'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 8 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', fontWeight: 600, fontSize: '1.1rem', color: '#fff' }}>
+                      <i className="fas fa-birthday-cake" style={{ marginRight: 6 }}></i>
+                      {user?.blind_age || <span style={{ fontStyle: 'italic', color: '#e0e0e0' }}>Age pending</span>}
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', color: '#fff' }}>
+                      <i className="fas fa-phone" style={{ marginRight: 6 }}></i>
+                      {user?.blind_phone_number || '-'}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', color: '#fff' }}>
+                    <i className="fas fa-envelope" style={{ marginRight: 6 }}></i>
+                    {user?.email || '-'}
+                  </div>
+                  <div style={{
+                    marginTop: 10,
                     display: 'inline-flex',
                     alignItems: 'center',
                     background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
@@ -408,81 +520,50 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
                     fontWeight: 600,
                     boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
                     letterSpacing: 0.2,
-                    marginRight: 0,
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    minWidth: 220,
-                    transition: 'background 0.2s, box-shadow 0.2s',
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #5ee7df 0%, #b490ca 100%)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 16px rgba(44,62,80,0.18)';
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.background = 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(44,62,80,0.10)';
-                  }}
-                >
-                  <i className="fas fa-person-walking-with-cane" style={{marginRight: 10, fontSize: '1.2em'}}></i>
-                  Smart Stick #{user?.device_serial_number || '--'} - Connected
-                </span>
-              </div>
-            </div>
-            {/* ExportButtons - rightmost, responsive */}
-            <div
-              className="export-buttons-responsive"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                justifyContent: 'flex-start',
-                minWidth: 120,
-                marginLeft: '2rem',
-                marginTop: 0,
-                width: '100%',
-                maxWidth: 220,
-              }}
-            >
-            </div>
-            {/* Device Status badge/pill, rightmost on desktop, below name on mobile */}
-            <div
-              className="device-status-pill"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                justifyContent: 'flex-start',
-                minWidth: 120,
-                marginLeft: '2rem',
-                marginTop: 0,
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
+                    minWidth: 220
+                  }}>
+                    <i className="fas fa-person-walking-with-cane" style={{ marginRight: 10, fontSize: '1.2em' }}></i>
+                    Smart Stick #{user?.device_serial_number || '--'} - Connected
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  background: user?.device_active ? 'linear-gradient(90deg, #43cea2 0%, #2ecc71 100%)' : 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)',
-                  borderRadius: '999px',
-                  padding: '0.5rem 1.2rem',
-                  fontSize: '1.1rem',
-                  color: '#fff',
-                  fontWeight: 700,
-                  boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
-                  letterSpacing: 0.2,
-                  marginBottom: 8,
-                  marginTop: 8,
-                  minWidth: 120,
                   justifyContent: 'center',
-                }}
-              >
-                <i className={user?.device_active ? 'fas fa-circle' : 'fas fa-circle-notch'} style={{marginRight: 10, color: user?.device_active ? '#2ecc71' : '#e74c3c'}}></i>
-                {user?.device_active ? 'ONLINE' : 'OFFLINE'}
-              </span>
-              <span style={{fontSize: '0.95rem', color: '#fff', opacity: 0.8}}>
-                <i className="fas fa-wifi" style={{marginRight: 6}}></i> Last sync: <span>{data.lastSync || 'N/A'}</span>
-              </span>
-            </div>
-          </div>
+                  flex: 0,
+                  minWidth: 120,
+                  marginLeft: '2.5rem',
+                  height: '100%',
+                  position: 'relative',
+                }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      background: user?.device_active ? 'linear-gradient(90deg, #43cea2 0%, #2ecc71 100%)' : 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)',
+                      borderRadius: '999px',
+                      padding: '0.5rem 1.2rem',
+                      fontSize: '1.1rem',
+                      color: '#fff',
+                      fontWeight: 700,
+                      boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+                      letterSpacing: 0.2,
+                      minWidth: 120,
+                      justifyContent: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <i className={user?.device_active ? 'fas fa-circle' : 'fas fa-circle-notch'} style={{marginRight: 10, color: user?.device_active ? '#2ecc71' : '#e74c3c'}}></i>
+                    {user?.device_active ? 'ONLINE' : 'OFFLINE'}
+                  </span>
+                  <span style={{fontSize: '0.98rem', color: '#fff', fontWeight: 500, marginTop: 2, opacity: 0.8, textAlign: 'center'}}>
+                    Last sync: {data.locationUpdate || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
         {/* Responsive CSS for ExportButtons */}
         <style>{`
@@ -514,7 +595,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
         <hr className="section-divider" />
         {/* Status Cards - Grid Layout (without Device Status card) */}
         <div className="dashboard-cards-grid">
-
           {/* Location Card */}
           <div className="dashboard-card">
             <div className="card-header">
@@ -530,7 +610,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
               </div>
             </div>
           </div>
-
           {/* Battery Level Card */}
           <div className="dashboard-card">
             <div className="card-header">
@@ -546,7 +625,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
               </div>
             </div>
           </div>
-
           {/* Activity Status Card */}
           <div className="dashboard-card">
             <div className="card-header">
@@ -566,7 +644,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
               </div>
             </div>
           </div>
-
           {/* Emergency System Card */}
           <div className="dashboard-card">
             <div className="card-header">
@@ -586,7 +663,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
               </div>
             </div>
           </div>
-
           {/* Night Reflector Card */}
           <div className="dashboard-card">
             <div className="card-header">
@@ -607,6 +683,12 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
             </div>
           </div>
         </div>
+        {/* Export Buttons above activity log for mobile */}
+        {isMobile && (
+          <div className="export-buttons" style={{ width: '100vw', margin: '0.5rem 0', padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box' }}>
+            <ExportButtons activityLog={data?.activityLog || []} />
+          </div>
+        )}
         {/* Activity Log */}
         <div style={{
           background: 'linear-gradient(135deg, #eaf6fb 0%, #f4f1fa 100%)',
@@ -637,8 +719,8 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
           }}
             className="custom-activity-scrollbar"
           >
-            {recent && recent.length > 0 ? (
-              recent.map((item: any, idx: number) => (
+            {data.recent && data.recent.length > 0 ? (
+              data.recent.map((item: any, idx: number) => (
                 <div key={idx} style={{
                   background: '#fff',
                   borderRadius: '1rem',
@@ -687,6 +769,6 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
       </main>
     </div>
   );
-};
+}
 
 export default Dashboard;

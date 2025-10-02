@@ -50,7 +50,7 @@ const App: React.FC = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Routes>
-            </Router>
+            </Router>           
         </ErrorBoundary>
     );
 };

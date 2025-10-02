@@ -14,9 +14,11 @@ const navTabs = [
 interface SidebarProps {
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
+  caregiverName?: string;
+  caregiverRelationship?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ expanded, setExpanded }) => {
+const Sidebar: React.FC<SidebarProps> = ({ expanded, setExpanded, caregiverName, caregiverRelationship }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -54,9 +56,36 @@ const Sidebar: React.FC<SidebarProps> = ({ expanded, setExpanded }) => {
       onTouchEnd={() => setExpanded(false)}
       aria-hidden={false}
     >
-      <div className="sidebar-logo" aria-hidden>
-        <i className="fas fa-blind"></i>
-      </div>
+      {/* Caregiver info at top only for mobile, icon for desktop */}
+      {typeof window !== 'undefined' && window.innerWidth <= 430 && (typeof caregiverName === 'string' && caregiverName.length > 0) ? (
+        <div className="sidebar-caregiver-info" style={{padding: '1.2rem 1rem 0.5rem 1rem', textAlign: 'center'}}>
+          <span style={{fontWeight: 700, fontSize: '1.1rem', color: '#232946'}}>{caregiverName}</span>
+          {caregiverRelationship && (
+            <span style={{
+              display: 'block',
+              marginTop: 2,
+              background: 'rgba(44,62,80,0.08)',
+              borderRadius: '1rem',
+              padding: '0.13rem 0.8rem',
+              fontWeight: 600,
+              fontSize: '0.98rem',
+              color: '#2c3e50',
+              letterSpacing: 0.2,
+              maxWidth: 120,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>{caregiverRelationship}</span>
+          )}
+        </div>
+      ) : (
+        <div className="sidebar-logo" aria-hidden>
+          <i className="fas fa-blind"></i>
+        </div>
+      )}
 
       <nav className="sidebar-menu" role="navigation" aria-label="Main navigation">
         <ul>
