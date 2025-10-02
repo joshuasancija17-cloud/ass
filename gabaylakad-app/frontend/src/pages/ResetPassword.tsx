@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -32,7 +31,10 @@ const ResetPassword: React.FC = () => {
             });
             const data = await response.json();
             if (response.ok) {
-                setMessage('Password reset successful!');
+                setMessage('Password reset successful! You will be redirected to the login page in a few seconds.');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000); // 3 seconds delay
             } else {
                 setMessage(data.message || 'Password reset failed.');
             }

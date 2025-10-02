@@ -1,6 +1,8 @@
-import React from 'react';
-import Sidebar from '../components/Sidebar';
+
+import React, { useState, useEffect } from 'react';
+import HeaderDesktop from '../components/headerDesktop';
 import '../styles/dashboard-main.css';
+import useIsMobile from '../components/useIsMobile';
 
 interface SensorPageProps {
   sidebarExpanded: boolean;
@@ -8,11 +10,20 @@ interface SensorPageProps {
 }
 
 const SensorPage: React.FC<SensorPageProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
+  const [profile, setProfile] = useState<any>(null);
+  const isMobile = useIsMobile();
+
+  // Example: fetch user profile if needed
+  useEffect(() => {
+    // Replace with your actual fetch logic
+    setProfile({ name: 'User' });
+  }, []);
+
   return (
     <div className="dashboard-container">
-      <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} />
-      <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"}>
-        <h1>Sensor Data</h1>
+      {/* Desktop: HeaderDesktop, Mobile: no header or mobile header if needed */}
+      {!isMobile && <HeaderDesktop user={profile} />}
+  <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { paddingTop: 80 } : {}}>
         {/* Add sensor data content here */}
       </main>
     </div>

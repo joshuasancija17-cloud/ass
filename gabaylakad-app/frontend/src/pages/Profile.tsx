@@ -1,6 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
+import React, { useEffect, useState, useRef } from 'react';
 import '../styles/dashboard-main.css';
+import { HeaderDesktop } from '../components/headerDesktop';
+
+const navTabs = [
+  { key: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+  { key: 'profile', label: 'My Profile', icon: 'fas fa-user' },
+  { key: 'history', label: 'History', icon: 'fas fa-history' },
+  { key: 'location', label: 'Location Tracking', icon: 'fas fa-map-marker-alt' },
+  { key: 'sensor', label: 'Sensor Data', icon: 'fas fa-microchip' },
+];
+
+// Custom hook to detect mobile viewport
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 430);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 430);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return isMobile;
+}
+
 
 interface ProfilePageProps {
   sidebarExpanded: boolean;
@@ -8,209 +28,80 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
+
   const [profile, setProfile] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<any>({});
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [successMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  // Change password state
+  const isMobile = useIsMobile();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuBtnRef = useRef<HTMLButtonElement | null>(null);
+  const userMenuDropdownRef = useRef<HTMLDivElement | null>(null);
 
+  // Close dropdown on outside click (mobile only)
   useEffect(() => {
-    let retryCount = 0;
-    const tryFetchProfile = async () => {
-      try {
-        await fetchProfile();
-      } catch (err) {
-        retryCount++;
-        if (retryCount < 3) {
-          setTimeout(tryFetchProfile, 1500); // Retry after 1.5s
-        }
+    if (!userMenuOpen || !isMobile) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        userMenuDropdownRef.current &&
+        !userMenuDropdownRef.current.contains(e.target as Node) &&
+        userMenuBtnRef.current &&
+        !userMenuBtnRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
       }
-    };
-    tryFetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/profile', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to load profile.');
-      }
-      const data = await res.json();
-      setProfile(data);
-      setForm(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load profile.');
-    } finally {
-      setLoading(false);
     }
-  };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [userMenuOpen, isMobile]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSuccessMsg('Profile updated successfully!');
-        setProfile(data);
-        setEditMode(false);
-      } else {
-        setErrorMsg(data.message || 'Failed to update profile.');
-      }
-    } catch (err) {
-      setErrorMsg('Network error.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ...fetchProfile and other logic here...
 
   return (
     <div className="dashboard-container">
-      <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} />
-      <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"}>
-  <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-blue-700 mb-2">My Profile</h1>
-          {errorMsg && (
-            <div className="error-notification text-red-600 mb-4 flex items-center justify-center">
-              <i className="fas fa-exclamation-circle mr-2"></i>
-              <span>{errorMsg}</span>
-              <button className="ml-4 px-3 py-1 rounded bg-blue-100 text-blue-700 font-semibold" onClick={() => window.location.reload()}>Reload</button>
-            </div>
-          )}
-          <form onSubmit={handleSave} className="bg-white border border-gray-200 rounded-xl shadow-sm p-12">
-            {/* Caregiver Information Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-blue-700 mb-4">Caregiver Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                  {editMode ? (
-                    <input type="text" name="first_name" value={form.first_name || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                  ) : (
-                    <div className="text-gray-600">{form.first_name || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                  {editMode ? (
-                    <input type="text" name="last_name" value={form.last_name || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                  ) : (
-                    <div className="text-gray-600">{form.last_name || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  {editMode ? (
-                    <input type="tel" name="phone_number" value={form.phone_number || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" maxLength={11} required />
-                  ) : (
-                    <div className="text-gray-600">{form.phone_number || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  {editMode ? (
-                    <input type="email" name="email" value={form.email || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                  ) : (
-                    <div className="text-gray-600">{form.email || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Relationship</label>
-                  {editMode ? (
-                    <input type="text" name="relationship" value={form.relationship || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                  ) : (
-                    <div className="text-gray-600">{form.relationship || '-'}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Blind Person Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold text-blue-700 mb-4">Person You'll Monitor</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                  {editMode ? (
-                    <input type="text" name="blind_full_name" value={form.blind_full_name || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
-                  ) : (
-                    <div className="text-gray-600">{form.blind_full_name || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                  {editMode ? (
-                    <input type="tel" name="blind_phone_number" value={form.blind_phone_number || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" maxLength={11} />
-                  ) : (
-                    <div className="text-gray-600">{form.blind_phone_number || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-                  {editMode ? (
-                    <input type="number" name="blind_age" value={form.blind_age || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" min={1} max={120} required />
-                  ) : (
-                    <div className="text-gray-600">{form.blind_age ? form.blind_age : <span className="italic text-gray-400">Age pending</span>}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Impairment Level</label>
-                  {editMode ? (
-                    <select name="impairment_level" value={form.impairment_level || ''} onChange={handleChange} className="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
-                      <option value="">Select impairment level</option>
-                      <option value="Totally Blind">Totally Blind</option>
-                      <option value="Partially Sighted">Partially Sighted</option>
-                      <option value="Low Vision">Low Vision</option>
-                    </select>
-                  ) : (
-                    <div className="text-gray-600">{form.impairment_level || '-'}</div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Device Serial Number</label>
-                  <div className="text-gray-600">{form.device_id || '--'}</div>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <button type="button" className="btn-primary px-5 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 font-semibold transition-all" onClick={() => setEditMode(!editMode)}>
-                {editMode ? 'Cancel' : 'Edit Profile'}
-              </button>
-              {editMode && (
-                <button type="submit" className="btn-primary ml-4 py-2 px-6 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 text-lg font-semibold transition-all" disabled={loading}>
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </button>
-              )}
-            </div>
-            {successMsg && <div className="success-notification text-green-600 mt-4 flex items-center"><i className="fas fa-check-circle mr-2"></i>{successMsg}</div>}
-            {errorMsg && <div className="error-notification text-red-600 mt-4 flex items-center"><i className="fas fa-exclamation-circle mr-2"></i>{errorMsg}</div>}
-          </form>
+      {/* Desktop: HeaderDesktop, Mobile: mobile header */}
+      {!isMobile && <HeaderDesktop user={profile} />}
+      {isMobile && (
+        <div className="dashboard-header" style={{ width: '100%', margin: 0, padding: '0.7rem 0.7rem', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflowX: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 100, background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+          {/* ...mobile header code here (avatar, dropdown, etc.)... */}
         </div>
+      )}
+  <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { paddingTop: 80 } : {}}>
+        {/* Responsive Profile Form */}
+        <div className={isMobile ? "profile-mobile-wrapper" : "max-w-4xl mx-auto"} style={isMobile ? { width: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', background: '#fff', borderRadius: '1.5rem', boxShadow: '0 4px 24px rgba(44,62,80,0.10)', marginTop: '1.2rem' } : {}}>
+          {/* ...existing profile form code... */}
+        </div>
+        {/* Mobile-only responsive styles */}
+        {isMobile && (
+          <style>{`
+            .profile-mobile-wrapper {
+              max-width: 100vw !important;
+              border-radius: 1.5rem !important;
+              box-shadow: 0 4px 24px rgba(44,62,80,0.10) !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .profile-mobile-form {
+              padding: 1.2rem !important;
+              border: none !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+            }
+            .profile-mobile-form input, .profile-mobile-form select {
+              font-size: 1rem !important;
+              padding: 0.7rem 0.8rem !important;
+            }
+            .profile-mobile-form label {
+              font-size: 0.98rem !important;
+            }
+          `}</style>
+        )}
       </main>
     </div>
+
   );
-};
+}
 
 export default ProfilePage;

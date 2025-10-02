@@ -41,7 +41,7 @@ const Verify: React.FC = () => {
         });
         const loginData = await loginRes.json();
         if (loginData.token) {
-          localStorage.setItem('token', loginData.token);
+          sessionStorage.setItem('token', loginData.token);
           setTimeout(() => navigate('/dashboard'), 1200);
         } else {
           setMessage('Verification succeeded, but login failed. Please login manually.');

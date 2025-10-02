@@ -35,8 +35,8 @@ const LoginForm: React.FC = () => {
             if (response.ok) {
                 if (data.token) {
                     console.log('JWT token received:', data.token);
-                    localStorage.setItem('token', data.token);
-                    console.log('Token saved to localStorage:', localStorage.getItem('token'));
+                    sessionStorage.setItem('token', data.token);
+                    console.log('Token saved to sessionStorage:', sessionStorage.getItem('token'));
                     setSuccessMsg('Login successful! Redirecting...');
                     setTimeout(() => {
                         navigate('/dashboard');

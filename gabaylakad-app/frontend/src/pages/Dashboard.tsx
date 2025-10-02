@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
+
+import React, { useState, useEffect, useRef } from 'react';
+import HeaderDesktop from '../components/headerDesktop';
 import '../styles/dashboard-main.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import ExportButtons from '../components/ExportButtons';
+const navTabs = [
+  { key: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+  { key: 'profile', label: 'My Profile', icon: 'fas fa-user' },
+  { key: 'history', label: 'History', icon: 'fas fa-history' },
+  { key: 'location', label: 'Location Tracking', icon: 'fas fa-map-marker-alt' },
+  { key: 'sensor', label: 'Sensor Data', icon: 'fas fa-microchip' },
+];
 
-// TypeScript interfaces for dashboard data
-
-interface Patient {
-  name: string;
-  age: number;
-}
-
-// Fetch dashboard data from backend
 async function fetchDashboardData() {
   try {
     const res = await fetch('/api/dashboard', {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        Authorization: `Bearer ${sessionStorage.getItem('token')}`,
       },
     });
     const data = await res.json();
@@ -47,12 +47,220 @@ function useIsMobile() {
   return isMobile;
 }
 
+// Header component for Dashboard (mobile & desktop)
+interface DashboardHeaderProps {
+  user: any;
+  isMobile: boolean;
+  navTabs: typeof navTabs;
+  userMenuOpen: boolean;
+  setUserMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  userMenuBtnRef: React.RefObject<HTMLButtonElement>;
+  userMenuDropdownRef: React.RefObject<HTMLDivElement>;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, isMobile, navTabs, userMenuOpen, setUserMenuOpen, userMenuBtnRef, userMenuDropdownRef }) => (
+  isMobile ? (
+    <div className="dashboard-header" style={{ width: '100%', margin: 0, padding: '0.7rem 0.7rem', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflowX: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 100, background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+      <div style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.7rem 0.5rem',
+        boxSizing: 'border-box',
+        gap: '1.2rem',
+        overflowX: 'hidden',
+      }}>
+        {/* User avatar/profile button - leftmost */}
+        <div style={{position: 'relative', display: 'inline-flex', alignItems: 'center'}}>
+          <button
+            ref={userMenuBtnRef}
+            className="mobile-profile-avatar-btn"
+            aria-label="Open user menu"
+            onClick={() => setUserMenuOpen((open) => !open)}
+            style={{ background: 'none', border: '2px solid #8e44ad', padding: 0, borderRadius: '50%' }}
+          >
+            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.blind_full_name || user?.first_name || 'User')}&background=8e44ad&color=fff`} alt="Avatar" className="mobile-profile-avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', boxShadow: '0 2px 8px rgba(44,62,80,0.10)' }} />
+          </button>
+          {/* Dropdown menu */}
+          {userMenuOpen && (
+            <div
+              ref={userMenuDropdownRef}
+              className="mobile-profile-dropdown"
+            >
+              {/* User info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.8rem 1.1rem', borderBottom: '1px solid #f0f0f0', background: 'rgba(41,128,185,0.07)' }}>
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.blind_full_name || user?.first_name || 'User')}&background=8e44ad&color=fff`} alt="Avatar" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '1.01rem', marginBottom: 2 }}>{user?.blind_full_name || user?.first_name || 'User Name'}</div>
+                  <div style={{ fontSize: '0.95rem', color: '#7f8c8d' }}>{user?.email || 'user@email.com'}</div>
+                </div>
+              </div>
+              {/* Menu: Navigation links and actions */}
+              <nav role="navigation" aria-label="User menu navigation" style={{ padding: '0.4rem 0.5rem' }}>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {navTabs.map(tab => (
+                    <li key={tab.key}>
+                      <button
+                        className="mobile-profile-menu-link"
+                        aria-label={tab.label}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'rgba(41,128,185,0.08)', border: 'none', borderRadius: 10, padding: '0.8rem 1.1rem', fontSize: '1.01rem', color: '#232946', fontWeight: 600, gap: 12, cursor: 'pointer', transition: 'background 0.18s', marginBottom: 6 }}
+                        onClick={() => { setUserMenuOpen(false); window.location.href = `/${tab.key}`; }}
+                      >
+                        <i className={tab.icon} aria-hidden style={{ fontSize: '1.1rem', width: 24, textAlign: 'center', color: '#2980b9' }}></i>
+                        <span>{tab.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                  <li>
+                    <button className="mobile-profile-menu-link" aria-label="Logout" style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'rgba(231,76,60,0.09)', border: 'none', borderRadius: 10, padding: '0.8rem 1.1rem', fontSize: '1.01rem', color: '#e74c3c', fontWeight: 600, gap: 12, cursor: 'pointer', transition: 'background 0.18s', marginBottom: 0 }} onClick={() => { setUserMenuOpen(false); sessionStorage.clear(); window.location.href = '/login'; }}>
+                      <i className="fas fa-sign-out-alt" aria-hidden style={{ fontSize: '1.1rem', width: 24, textAlign: 'center', color: '#e74c3c' }}></i>
+                      <span>Logout</span>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          )}
+        </div>
+        <div style={{position: 'relative', display: 'inline-flex', alignItems: 'center'}}>
+          <i 
+            className="fas fa-bell" 
+            style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer', marginRight: '0.7rem'}} 
+            onMouseEnter={e => {
+              const tooltip = e.currentTarget.nextSibling as HTMLElement;
+              if (tooltip) tooltip.style.opacity = '1';
+            }} 
+            onMouseLeave={e => {
+              const tooltip = e.currentTarget.nextSibling as HTMLElement;
+              if (tooltip) tooltip.style.opacity = '0';
+            }}
+          ></i>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: user?.device_active ? 'linear-gradient(90deg, #43cea2 0%, #2ecc71 100%)' : 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)',
+            borderRadius: '999px',
+            padding: '0.5rem 1.2rem',
+            fontSize: '1.1rem',
+            color: '#fff',
+            fontWeight: 700,
+            boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
+            letterSpacing: 0.2,
+            maxWidth: '100%',
+            minWidth: 0,
+            overflow: 'visible',
+            textOverflow: 'ellipsis',
+            justifyContent: 'center',
+            flexShrink: 1,
+            flexBasis: 'auto',
+            boxSizing: 'border-box',
+            marginLeft: '0.20rem',
+          }}>
+            <i className={user?.device_active ? 'fas fa-circle' : 'fas fa-circle-notch'} style={{marginRight: 5, color: user?.device_active ? '#2ecc71' : '#e74c3c'}}></i>
+            {user?.device_active ? 'ONLINE' : 'OFFLINE'}
+          </span>
+          <span style={{
+            position: 'absolute',
+            right: '110%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: '#232946',
+            color: '#fff',
+            padding: '6px 16px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '1rem',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            opacity: 0,
+            transition: 'opacity 0.2s',
+            pointerEvents: 'none',
+            zIndex: 10
+          }}>Alerts & Safety</span>
+        </div>
+      </div>
+    </div>
+  ) : null
+);
+
+
+// Dropbar component for desktop navigation (nav only, no header)
+const Dropbar: React.FC<{ navTabs: typeof navTabs }> = ({ navTabs }) => {
+  return (
+    <nav className="dashboard-dropbar" style={{
+      width: '100%',
+      background: 'linear-gradient(90deg, #2a9fd6 0%, #8e44ad 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '0.5rem 0',
+      position: 'fixed',
+      top: 64,
+      left: 0,
+      zIndex: 101,
+      boxShadow: '0 2px 12px rgba(44,62,80,0.08)',
+      borderBottomLeftRadius: 18,
+      borderBottomRightRadius: 18,
+      minHeight: 48,
+    }}>
+      <ul style={{ display: 'flex', alignItems: 'center', gap: 18, listStyle: 'none', margin: 0, padding: 0 }}>
+        {navTabs.map(tab => (
+          <li key={tab.key}>
+            <a
+              href={`/${tab.key}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: '#fff',
+                fontWeight: 600,
+                fontSize: '1.08rem',
+                padding: '0.5rem 1.1rem',
+                borderRadius: 10,
+                textDecoration: 'none',
+                background: window.location.pathname === `/${tab.key}` ? 'rgba(255,255,255,0.13)' : 'none',
+                transition: 'background 0.18s',
+              }}
+              aria-label={tab.label}
+            >
+              <i className={tab.icon} style={{ fontSize: '1.1rem', color: '#fff' }}></i>
+              <span>{tab.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
   const [data, setData] = useState<any>(null);
   const [inactiveTimeoutId, setInactiveTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
   const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Removed unused sidebarOpen state
+  // User menu dropdown for mobile
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuBtnRef = useRef<HTMLButtonElement | null>(null);
+  const userMenuDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown on outside click (mobile only)
+  useEffect(() => {
+    if (!userMenuOpen || !isMobile) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        userMenuDropdownRef.current &&
+        !userMenuDropdownRef.current.contains(e.target as Node) &&
+        userMenuBtnRef.current &&
+        !userMenuBtnRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [userMenuOpen, isMobile]);
 
   useEffect(() => {
     fetchDashboardData()
@@ -70,7 +278,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
       const timeoutId = setTimeout(() => {
         setData('INACTIVE_DEEP_LOADING');
         setTimeout(() => {
-          const token = localStorage.getItem('token');
+          const token = sessionStorage.getItem('token');
           if (!token) {
             window.location.href = '/';
           } else {
@@ -168,194 +376,35 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
   }
 
   // Use only actual data fields from backend
-  const { user, recent } = data;
+  const { user } = data;
 
   return (
     <div className="dashboard-container">
-      {/* Mobile sidebar overlay logic */}
+      {/* Desktop: Header + Dropbar, Mobile: Sidebar + Header */}
       {isMobile ? (
         <>
-          {sidebarOpen && (
-            <>
-              <div
-                className="sidebar-overlay"
-                onClick={() => setSidebarOpen(false)}
-                style={{
-                  position: 'fixed',
-                  top: 0, left: 0, width: '100vw', height: '100vh',
-                  background: 'rgba(0,0,0,0.3)', zIndex: 1000
-                }}
-              />
-              <div style={{position: 'fixed', top: 0, left: 0, height: '100vh', width: '220px', zIndex: 1001, background: '#232946'}}>
-                <Sidebar expanded={true} setExpanded={() => {}} />
-                <button
-                  className="close-btn"
-                  onClick={() => setSidebarOpen(false)}
-                  style={{
-                    position: 'absolute', top: 12, right: 12, fontSize: '1.5rem',
-                    background: 'none', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 1002
-                  }}
-                  aria-label="Close sidebar"
-                >
-                  &times;
-                </button>
-              </div>
-            </>
-          )}
+          <DashboardHeader
+            user={user}
+            isMobile={isMobile}
+            navTabs={navTabs}
+            userMenuOpen={userMenuOpen}
+            setUserMenuOpen={setUserMenuOpen}
+            userMenuBtnRef={userMenuBtnRef}
+            userMenuDropdownRef={userMenuDropdownRef}
+          />
         </>
       ) : (
-        <Sidebar expanded={sidebarExpanded} setExpanded={setSidebarExpanded} />
+        <>
+          <HeaderDesktop user={user} />
+          <Dropbar navTabs={navTabs} />
+        </>
       )}
-      <main className={isMobile ? "main-content-full" : sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { padding: 0, margin: 0, width: '100vw', minWidth: 0, maxWidth: '100vw', boxSizing: 'border-box', overflowX: 'hidden' } : {}}>
-  <div className="dashboard-header" style={isMobile ? { width: '100%', margin: 0, padding: '0.7rem 0.7rem', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflowX: 'hidden' } : {display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-          {/* Hamburger, bell, and status badge in a single right-aligned row for mobile */}
-          {isMobile ? (
-            <div style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              padding: '0.7rem 0.5rem',
-              boxSizing: 'border-box',
-              gap: '1.2rem',
-              overflowX: 'hidden',
-            }}>
-              <button
-                className="hamburger"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open sidebar"
-                style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer', color: '#232946' }}
-              >
-                &#9776;
-              </button>
-              <div style={{position: 'relative', display: 'inline-flex', alignItems: 'center'}}>
-                <i 
-                  className="fas fa-bell" 
-                  style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer', marginRight: '0.7rem'}} 
-                  onMouseEnter={e => {
-                    const tooltip = e.currentTarget.nextSibling as HTMLElement;
-                    if (tooltip) tooltip.style.opacity = '1';
-                  }} 
-                  onMouseLeave={e => {
-                    const tooltip = e.currentTarget.nextSibling as HTMLElement;
-                    if (tooltip) tooltip.style.opacity = '0';
-                  }}
-                ></i>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: user?.device_active ? 'linear-gradient(90deg, #43cea2 0%, #2ecc71 100%)' : 'linear-gradient(90deg, #e74c3c 0%, #c0392b 100%)',
-                  borderRadius: '999px',
-                  padding: '0.5rem 1.2rem',
-                  fontSize: '1.1rem',
-                  color: '#fff',
-                  fontWeight: 700,
-                  boxShadow: '0 2px 8px rgba(44,62,80,0.10)',
-                  letterSpacing: 0.2,
-                  maxWidth: '100%',
-                  minWidth: 0,
-                  overflow: 'visible',
-                  textOverflow: 'ellipsis',
-                  justifyContent: 'center',
-                  flexShrink: 1,
-                  flexBasis: 'auto',
-                  boxSizing: 'border-box',
-                  marginLeft: '0.20rem',
-                }}>
-                  <i className={user?.device_active ? 'fas fa-circle' : 'fas fa-circle-notch'} style={{marginRight: 5, color: user?.device_active ? '#2ecc71' : '#e74c3c'}}></i>
-                  {user?.device_active ? 'ONLINE' : 'OFFLINE'}
-                </span>
-                <span style={{
-                  position: 'absolute',
-                  right: '110%',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: '#232946',
-                  color: '#fff',
-                  padding: '6px 16px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  opacity: 0,
-                  transition: 'opacity 0.2s',
-                  pointerEvents: 'none',
-                  zIndex: 10
-                }}>Alerts & Safety</span>
-              </div>
-            </div>
-          ) : (
-            <>
-              <h1>Monitoring Dashboard</h1>
-              <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
-                {/* Alerts & Safety Icon with Tooltip */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                </div>
-                <div style={{position: 'relative', display: 'inline-block'}}>
-                  <i 
-                    className="fas fa-bell" 
-                    style={{fontSize: '2rem', color: '#2c3e50', cursor: 'pointer'}} 
-                    onMouseEnter={e => {
-                      const tooltip = e.currentTarget.nextSibling as HTMLElement;
-                      if (tooltip) tooltip.style.opacity = '1';
-                    }} 
-                    onMouseLeave={e => {
-                      const tooltip = e.currentTarget.nextSibling as HTMLElement;
-                      if (tooltip) tooltip.style.opacity = '0';
-                    }}
-                  ></i>
-                  <span style={{
-                    position: 'absolute',
-                    right: '110%',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: '#232946',
-                    color: '#fff',
-                    padding: '6px 16px',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    opacity: 0,
-                    transition: 'opacity 0.2s',
-                    pointerEvents: 'none',
-                    zIndex: 10
-                  }}>Alerts & Safety</span>
-                </div>
-                {/* Caregiver name and relationship in header for desktop */}
-                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end'}}>
-                  <span style={{fontWeight: 'bold', fontSize: '1.1rem', color: '#232946'}}>
-                    {user?.first_name || ''} {user?.last_name || ''}
-                  </span>
-                  {user?.relationship && (
-                    <span style={{
-                      marginTop: 1,
-                      right: '50px',
-                      background: 'rgba(44,62,80,0.08)',
-                      borderRadius: '1rem',
-                      padding: '0.13rem 0.8rem',
-                      fontWeight: 600,
-                      fontSize: '0.98rem',
-                      color: '#2c3e50',
-                      letterSpacing: 0.2,
-                      display: 'inline-block',
-                      maxWidth: 90,
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {user.relationship}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-          {/* Bell notification icon for mobile (far right) */}
-        </div>
+      <main
+        className={isMobile ? "main-content-full" : "main-content-expanded"}
+        style={isMobile
+          ? { paddingTop: 80, paddingLeft: 0, paddingRight: 0, margin: 0, width: '100vw', minWidth: 0, maxWidth: '100vw', boxSizing: 'border-box', overflowX: 'hidden' }
+          : { paddingTop: 128 }}
+      >
         {/* Enhanced Profile Card Section with Device Status */}
         <div
           className="dashboard-profile-card"

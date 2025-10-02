@@ -114,8 +114,8 @@ const RegisterForm: React.FC = () => {
             if (res.ok) {
                 // If backend returns token, save and redirect
                 if (data.token) {
-                    localStorage.setItem('token', data.token);
-                    alert('Token saved to localStorage: ' + localStorage.getItem('token'));
+                    sessionStorage.setItem('token', data.token);
+                    alert('Token saved to sessionStorage: ' + sessionStorage.getItem('token'));
                     setSuccessMsg('Registration successful! Redirecting to dashboard...');
                     setTimeout(() => {
                         window.location.href = '/dashboard';

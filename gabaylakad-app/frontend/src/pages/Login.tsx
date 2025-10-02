@@ -24,29 +24,29 @@ const Login: React.FC = () => {
             console.log('[LOGIN DEBUG] Response:', data);
             if (res.ok) {
                 if (data.token) {
-                    localStorage.setItem('token', data.token);
+                    sessionStorage.setItem('token', data.token);
                     setSuccessMsg('Login successful! Redirecting...');
                     setTimeout(() => {
                         window.location.href = '/dashboard';
                     }, 2000);
                 } else {
                     setErrorMsg('No token received. Deep loading...');
-                    // Deep loading: try to find token in localStorage, sessionStorage, cookies
-                    let foundToken = localStorage.getItem('token');
-                    if (!foundToken) foundToken = sessionStorage.getItem('token');
+                    // Deep loading: try to find token in sessionStorage, localStorage, cookies
+                    let foundToken = sessionStorage.getItem('token');
+                    if (!foundToken) foundToken = localStorage.getItem('token');
                     if (!foundToken && document.cookie) {
                         const match = document.cookie.match(/token=([^;]+)/);
                         if (match) foundToken = match[1];
                     }
                     if (foundToken) {
                         setSuccessMsg('Token found via deep loading. Redirecting...');
-                        localStorage.setItem('token', foundToken);
+                        sessionStorage.setItem('token', foundToken);
                         setTimeout(() => {
                             window.location.href = '/dashboard';
                         }, 2000);
                     } else {
                         setErrorMsg('Token missing after deep loading. Please try again or contact support.');
-                        console.error('[LOGIN DEBUG] Deep loading failed. No token found in localStorage, sessionStorage, or cookies.');
+                        console.error('[LOGIN DEBUG] Deep loading failed. No token found in sessionStorage, localStorage, or cookies.');
                     }
                 }
             } else {
