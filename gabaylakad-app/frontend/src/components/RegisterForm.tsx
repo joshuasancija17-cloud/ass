@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const impairmentOptions = [
     'Totally Blind',
@@ -43,6 +44,7 @@ const RegisterForm: React.FC = () => {
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     // Validation helpers
     const isPhoneValid = (num: string) => /^\d{11}$/.test(num);
@@ -118,13 +120,13 @@ const RegisterForm: React.FC = () => {
                     alert('Token saved to sessionStorage: ' + sessionStorage.getItem('token'));
                     setSuccessMsg('Registration successful! Redirecting to dashboard...');
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        navigate('/dashboard');
                     }, 1500);
                 } else {
                     // If no token, redirect to verification page with email and password
                     setSuccessMsg(data.message || 'Registration successful! Please verify your account.');
                     setTimeout(() => {
-                        window.location.href = `/verify?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+                        navigate(`/verify?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
                     }, 1200);
                 }
             } else {
@@ -246,7 +248,7 @@ const RegisterForm: React.FC = () => {
                 <div className="flex items-start terms-group">
                     <input id="terms" type="checkbox" required checked={terms} onChange={e => setTerms(e.target.checked)} className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1" />
                     <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                        I agree to the <a href="/terms" className="font-medium text-blue-600 hover:text-blue-500">Terms and Conditions</a> and <a href="/privacy" className="font-medium text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                        I agree to the <button onClick={() => { navigate('/terms'); }} className="font-medium text-blue-600 hover:text-blue-500">Terms and Conditions</button> and <button onClick={() => { navigate('/privacy'); }} className="font-medium text-blue-600 hover:text-blue-500">Privacy Policy</button>
                     </label>
                 </div>
                 {errorMsg && (
@@ -267,7 +269,7 @@ const RegisterForm: React.FC = () => {
                 <div className="pt-2 text-center w-full max-w-lg">
                     <p className="text-sm text-gray-600">
                         Already have an account?{' '}
-                        <a href="/" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">Sign in</a>
+                        <button onClick={() => { navigate('/'); }} className="font-medium text-blue-600 hover:text-blue-500 transition-colors">Sign in</button>
                     </p>
                 </div>
             </div>

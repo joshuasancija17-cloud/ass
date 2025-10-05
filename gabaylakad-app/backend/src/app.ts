@@ -20,6 +20,27 @@ app.post('/api/log', (req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' });
 });
 
+
+// Dashboard card endpoints (dummy data)
+app.get('/api/dashboard/location', (req, res) => {
+    res.json({ location: 'Unknown', lat: 0, lng: 0 });
+});
+app.get('/api/dashboard/battery', (req, res) => {
+    res.json({ battery: '100%', status: 'Full' });
+});
+app.get('/api/dashboard/activity', (req, res) => {
+    res.json({ activity: 'Inactive', lastActive: 'Never' });
+});
+app.get('/api/dashboard/emergency', (req, res) => {
+    res.json({ emergency: false, lastTriggered: null });
+});
+app.get('/api/dashboard/nightreflector', (req, res) => {
+    res.json({ nightReflector: 'Off', lastChanged: null });
+});
+app.get('/api/dashboard/activitylog', (req, res) => {
+    res.json({ logs: [] });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api', mainRoutes);
 

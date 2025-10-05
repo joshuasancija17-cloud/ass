@@ -1,5 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderDesktopProps {
   user: any;
@@ -17,6 +17,7 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuBtnRef = useRef<HTMLButtonElement | null>(null);
   const userMenuDropdownRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -46,29 +47,34 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#fff',
-        borderBottom: '1px solid #f0f0f0',
+        background: 'transparent',
+        borderBottom: 'none',
         position: 'fixed',
         top: 0,
         left: 0,
         zIndex: 102,
         minHeight: 64,
-        boxShadow: '0 2px 12px rgba(44,62,80,0.06)',
+        boxShadow: 'none',
       }}
     >
-      <h1 style={{
-        fontWeight: 800,
-        fontSize: '2.1rem',
-        color: '#232946',
-        letterSpacing: 0.5,
-        margin: 0,
-        fontFamily: 'Segoe UI, Open Sans, Roboto, Arial, sans-serif',
-      }}>
-        Monitoring Dashboard
-      </h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '2.2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src="/Logo.png"
+            alt="Logo"
+            style={{
+              height: '100%',
+              width: 'auto',
+              maxWidth: '100%',
+              margin: 0,
+              display: 'block',
+            }}
+          />
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2.8rem', paddingRight: '1.5rem' }}>
         {/* Alerts & Safety Icon with Tooltip */}
-        <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div style={{ position: 'relative', display: 'inline-block', marginRight: '1.2rem' }}>
           <i
             className="fas fa-bell"
             style={{ fontSize: '2rem', color: '#2c3e50', cursor: 'pointer' }}
@@ -105,7 +111,7 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
           </span>
         </div>
         {/* User profile avatar and dropbar menu */}
-        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', marginRight: '0.5rem' }}>
           <button
             ref={userMenuBtnRef}
             className="desktop-profile-avatar-btn"
@@ -150,7 +156,7 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
                         className="desktop-profile-menu-link"
                         aria-label={tab.label}
                         style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'rgba(41,128,185,0.08)', border: 'none', borderRadius: 10, padding: '0.8rem 1.1rem', fontSize: '1.01rem', color: '#232946', fontWeight: 600, gap: 12, cursor: 'pointer', transition: 'background 0.18s', marginBottom: 6 }}
-                        onClick={() => { setUserMenuOpen(false); window.location.href = `/${tab.key}`; }}
+                        onClick={() => { setUserMenuOpen(false); navigate(`/${tab.key}`); }}
                       >
                         <i className={tab.icon} aria-hidden style={{ fontSize: '1.1rem', width: 24, textAlign: 'center', color: '#2980b9' }}></i>
                         <span>{tab.label}</span>
@@ -158,7 +164,7 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
                     </li>
                   ))}
                   <li>
-                    <button className="desktop-profile-menu-link" aria-label="Logout" style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'rgba(231,76,60,0.09)', border: 'none', borderRadius: 10, padding: '0.8rem 1.1rem', fontSize: '1.01rem', color: '#e74c3c', fontWeight: 600, gap: 12, cursor: 'pointer', transition: 'background 0.18s', marginBottom: 0 }} onClick={() => { setUserMenuOpen(false); sessionStorage.clear(); window.location.href = '/login'; }}>
+                    <button className="desktop-profile-menu-link" aria-label="Logout" style={{ width: '100%', display: 'flex', alignItems: 'center', background: 'rgba(231,76,60,0.09)', border: 'none', borderRadius: 10, padding: '0.8rem 1.1rem', fontSize: '1.01rem', color: '#e74c3c', fontWeight: 600, gap: 12, cursor: 'pointer', transition: 'background 0.18s', marginBottom: 0 }} onClick={() => { setUserMenuOpen(false); sessionStorage.clear(); navigate('/login'); }}>
                       <i className="fas fa-sign-out-alt" aria-hidden style={{ fontSize: '1.1rem', width: 24, textAlign: 'center', color: '#e74c3c' }}></i>
                       <span>Logout</span>
                     </button>

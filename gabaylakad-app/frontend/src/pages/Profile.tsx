@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard-main.css';
 import { HeaderDesktop } from '../components/headerDesktop';
+import Header from '../components/Header';
 
 const navTabs = [
   { key: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
@@ -28,6 +30,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
@@ -63,11 +66,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ sidebarExpanded, setSidebarEx
     <div className="dashboard-container">
       {/* Desktop: HeaderDesktop, Mobile: mobile header */}
       {!isMobile && <HeaderDesktop user={profile} />}
-      {isMobile && (
-        <div className="dashboard-header" style={{ width: '100%', margin: 0, padding: '0.7rem 0.7rem', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between', overflowX: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 100, background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
-          {/* ...mobile header code here (avatar, dropdown, etc.)... */}
-        </div>
-      )}
+      {isMobile && <Header user={profile} />}
   <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { paddingTop: 80 } : {}}>
         {/* Responsive Profile Form */}
         <div className={isMobile ? "profile-mobile-wrapper" : "max-w-4xl mx-auto"} style={isMobile ? { width: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', background: '#fff', borderRadius: '1.5rem', boxShadow: '0 4px 24px rgba(44,62,80,0.10)', marginTop: '1.2rem' } : {}}>

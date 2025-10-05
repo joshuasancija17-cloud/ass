@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import HeaderDesktop from '../components/headerDesktop';
+import Header from '../components/Header';
 import '../styles/dashboard-main.css';
 import useIsMobile from '../components/useIsMobile';
 
@@ -21,8 +22,9 @@ const LocationPage: React.FC<LocationPageProps> = ({ sidebarExpanded, setSidebar
 
   return (
     <div className="dashboard-container">
-      {/* Desktop: HeaderDesktop, Mobile: no header or mobile header if needed */}
-      {!isMobile && <HeaderDesktop user={profile} />}
+  {/* Desktop: HeaderDesktop, Mobile: mobile header inside container */}
+  {!isMobile && <HeaderDesktop user={profile} />}
+  {isMobile && <Header user={profile} />}
   <main className={sidebarExpanded ? "main-content-expanded" : "main-content-collapsed"} style={isMobile ? { paddingTop: 80 } : {}}>
         {/* Add location tracking content here */}
       </main>

@@ -114,11 +114,9 @@ const Login: React.FC = () => {
                                         <div className="login-container relative bg-white">
                                             <div className="p-8">
                                                 <div className="text-center mb-6">
-                                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 mx-auto">
-                                                        <i className="fas fa-sign-in-alt text-blue-600 text-2xl"></i>
+                                                    <div className="mb-4">
+                                                        <img src="/Logo.png" alt="Company Logo" style={{width: 143, height: 143, margin: '0 auto'}} />
                                                     </div>
-                                                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Caregiver Login</h3>
-                                                    <p className="text-gray-600">Access your secure dashboard to monitor and support your loved one</p>
                                                 </div>
                                                 {/* Success Message */}
                                                 {successMsg && (
