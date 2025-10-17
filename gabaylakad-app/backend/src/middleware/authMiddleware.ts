@@ -6,10 +6,11 @@ declare module 'express-serve-static-core' {
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import redisClient from '../utils/redisClient';
 
 const secretKey = process.env.JWT_SECRET || 'your_secret_key';
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
     const rawAuthHeader = req.headers['authorization'];
     console.log('[AUTH MIDDLEWARE] Raw Authorization header:', rawAuthHeader);
     const token = rawAuthHeader?.split(' ')[1];
@@ -17,6 +18,17 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     if (!token) {
         console.warn('[AUTH MIDDLEWARE] No token provided');
         return res.status(401).json({ message: 'Unauthorized: No token provided' });
+    }
+    // Check Redis blacklist
+    try {
+        const isBlacklisted = await redisClient.get(`bl:${token}`);
+        if (isBlacklisted) {
+            console.warn('[AUTH MIDDLEWARE] Token is blacklisted');
+            return res.status(403).json({ message: 'Unauthorized: Token is blacklisted' });
+        }
+    } catch (redisErr) {
+        console.error('[AUTH MIDDLEWARE] Redis error:', redisErr);
+        return res.status(500).json({ message: 'Internal server error: Redis', error: redisErr });
     }
     jwt.verify(token, secretKey, (err: any, user: any) => {
         if (err) {

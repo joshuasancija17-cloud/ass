@@ -1,16 +1,13 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import authRoutes from './routes/authRoutes';
 import mainRoutes from './routes/mainRoutes';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
+app.use(morgan(':date[iso] :method :url :status :response-time ms'));
 
 
 // Endpoint to log frontend errors/messages to backend terminal

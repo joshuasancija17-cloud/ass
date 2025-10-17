@@ -5,12 +5,35 @@ import { query } from '../utils/db';
 import jwt from 'jsonwebtoken';
 import { sendResetEmail } from '../utils/email';
 import crypto from 'crypto';
+// ...existing code...
+import { blacklistToken, setSession, getSession } from '../utils/redisHelpers';
+
+// Helper to hash refresh tokens for Redis keying
+function hashRefreshToken(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 // Logout endpoint
 export const logout = async (req: Request, res: Response) => {
-    // If using JWT, logout is handled client-side by deleting the token.
-    // Optionally, you can implement token blacklisting here.
-    return res.status(200).json({ message: 'Logout successful!' });
+    // Extract token from Authorization header
+    const rawAuthHeader = req.headers['authorization'];
+    const token = rawAuthHeader?.split(' ')[1];
+    const { refreshToken } = req.body;
+    if (!token) {
+        return res.status(400).json({ message: 'No token provided for logout.' });
+    }
+    try {
+        await blacklistToken(token, process.env.JWT_SECRET || 'your_secret_key');
+        // Blacklist refresh token in Redis
+        if (refreshToken) {
+            const hashedRefresh = hashRefreshToken(refreshToken);
+            await setSession(`refresh:${hashedRefresh}`, '', 1); // expire immediately
+        }
+        return res.status(200).json({ message: 'Logout successful! Token and refresh token blacklisted.' });
+    } catch (err) {
+        console.error('[LOGOUT] Error blacklisting token:', err);
+        return res.status(500).json({ message: 'Logout failed. Could not blacklist token.', error: err });
+    }
 };
 
 
@@ -54,10 +77,13 @@ export const login = async (req: Request, res: Response) => {
             res.setHeader('X-Login-Error', msg);
             return res.status(401).json({ message: 'Incorrect password!', token: null });
         }
-            const token = jwt.sign({ userId: user.user_id, email: user.email }, process.env.JWT_SECRET || 'your_secret_key', { expiresIn: '10m' });
+        const token = jwt.sign({ userId: user.user_id, email: user.email }, process.env.JWT_SECRET || 'your_secret_key', { expiresIn: '10m' });
         const refreshToken = generateRefreshToken();
         // Save refresh token in DB
         await query('UPDATE user SET refresh_token = ? WHERE user_id = ?', [refreshToken, user.user_id]);
+        // Store hashed refresh token in Redis with TTL (30 days)
+        const hashedRefresh = hashRefreshToken(refreshToken);
+        await setSession(`refresh:${hashedRefresh}`, String(user.user_id), 30 * 24 * 60 * 60); // 30 days
         console.log('[LOGIN] JWT token generated:', token);
         console.log('[LOGIN] Refresh token generated:', refreshToken);
         res.setHeader('X-Login-Info', '[LOGIN] JWT token generated');
@@ -76,14 +102,28 @@ export const handleRefreshToken = async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Missing refresh token' });
     }
     try {
-        const { rows } = await query('SELECT * FROM user WHERE refresh_token = ?', [refreshToken]);
+        const hashedRefresh = hashRefreshToken(refreshToken);
+        // Check Redis for valid refresh token
+        const userId = await getSession(`refresh:${hashedRefresh}`);
+        if (!userId) {
+            return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+        // Optionally, check DB for user existence
+        const { rows } = await query('SELECT * FROM user WHERE user_id = ?', [userId]);
         const user = Array.isArray(rows) ? rows[0] as any : undefined;
         if (!user) {
-            return res.status(401).json({ message: 'Invalid refresh token' });
+            return res.status(401).json({ message: 'User not found for refresh token' });
         }
+        // Rotate refresh token: generate new, update DB, update Redis
+        const newRefreshToken = generateRefreshToken();
+        await query('UPDATE user SET refresh_token = ? WHERE user_id = ?', [newRefreshToken, user.user_id]);
+        const newHashedRefresh = hashRefreshToken(newRefreshToken);
+        await setSession(`refresh:${newHashedRefresh}`, String(user.user_id), 30 * 24 * 60 * 60); // 30 days
+        // Blacklist old refresh token in Redis (delete session)
+        await setSession(`refresh:${hashedRefresh}`, '', 1); // expire immediately
         // Issue new access token
-            const token = jwt.sign({ userId: user.user_id, email: user.email }, process.env.JWT_SECRET || 'your_secret_key', { expiresIn: '10m' });
-        return res.status(200).json({ token });
+        const token = jwt.sign({ userId: user.user_id, email: user.email }, process.env.JWT_SECRET || 'your_secret_key', { expiresIn: '10m' });
+        return res.status(200).json({ token, refreshToken: newRefreshToken });
     } catch (error) {
         return res.status(500).json({ message: 'Database error occurred', error });
     }

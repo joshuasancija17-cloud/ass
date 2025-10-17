@@ -24,3 +24,7 @@ cd gabaylakad-app/backend/db
 \connect root@localhost
 
 USE gabay_db;
+
+
+cd "/c/Users/RYZEN 7/Desktop/redis"
+./redis-server.exe

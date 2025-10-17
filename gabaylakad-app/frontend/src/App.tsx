@@ -10,6 +10,7 @@ import SensorPage from './pages/Sensor';
 import Verify from './pages/Verify';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import EditProfile from './pages/EditProfile';
 
 // Error Boundary for catching rendering errors
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
@@ -49,6 +50,8 @@ const App: React.FC = () => {
                     <Route path="/verify" element={<Verify />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/edit-profile" element={<EditProfile />} />
+                    <Route path="*" element={<div>404 - Page Not Found</div>} />
                 </Routes>
             </Router>           
         </ErrorBoundary>

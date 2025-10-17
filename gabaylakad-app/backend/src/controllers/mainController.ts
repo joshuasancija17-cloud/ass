@@ -14,12 +14,27 @@ export const updateProfile = async (req: Request, res: Response) => {
       blind_phone_number,
       blind_age,
       impairment_level,
-      device_id
+      device_id,
+      avatar
     } = req.body;
-    // Update user profile fields
+
+    // Validate required fields
+    if (!first_name || !last_name || !phone_number || !email) {
+      return res.status(400).json({
+        message: 'Missing required fields',
+        missing: [
+          !first_name ? 'first_name' : null,
+          !last_name ? 'last_name' : null,
+          !phone_number ? 'phone_number' : null,
+          !email ? 'email' : null
+        ].filter(Boolean)
+      });
+    }
+
+    // Update user profile fields including avatar
     await query(
-      `UPDATE user SET first_name = ?, last_name = ?, phone_number = ?, email = ?, relationship = ?, blind_full_name = ?, blind_phone_number = ?, blind_age = ?, impairment_level = ?, device_id = ? WHERE user_id = ?`,
-      [first_name, last_name, phone_number, email, relationship, blind_full_name, blind_phone_number, blind_age, impairment_level, device_id, userId]
+      `UPDATE user SET first_name = ?, last_name = ?, phone_number = ?, email = ?, relationship = ?, blind_full_name = ?, blind_phone_number = ?, blind_age = ?, impairment_level = ?, device_id = ?, avatar = ? WHERE user_id = ?`,
+      [first_name, last_name, phone_number, email, relationship, blind_full_name, blind_phone_number, blind_age, impairment_level, device_id, avatar, userId]
     );
     // Return updated profile
     const result = await query('SELECT * FROM user WHERE user_id = ?', [userId]);
@@ -45,7 +60,7 @@ export const dashboard = async (req: Request, res: Response) => {
     let userResult;
     try {
       userResult = await query(
-        'SELECT user_id, name, first_name, last_name, email, phone_number, impairment_level, device_id, is_verified, created_at, updated_at, relationship, blind_full_name, blind_age, blind_phone_number FROM user WHERE user_id = ?',
+        'SELECT user_id, name, first_name, last_name, email, phone_number, impairment_level, device_id, is_verified, created_at, updated_at, relationship, blind_full_name, blind_age, blind_phone_number, avatar FROM user WHERE user_id = ?',
         [userId]
       );
     } catch (dbErr) {
@@ -102,7 +117,7 @@ export const profile = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     const result = await query(
-      'SELECT user_id, blind_full_name, blind_age, blind_phone_number, impairment_level, email, device_id, name, first_name, last_name, phone_number, relationship FROM user WHERE user_id = ?',
+      'SELECT user_id, blind_full_name, blind_age, blind_phone_number, impairment_level, email, device_id, name, first_name, last_name, phone_number, relationship, avatar FROM user WHERE user_id = ?',
       [userId]
     );
     const rows = Array.isArray(result.rows) ? result.rows : [];

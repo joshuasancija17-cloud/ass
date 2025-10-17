@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import HeaderDesktop from '../components/headerDesktop';
 import Header from '../components/Header';
 import DashboardMobile from './DashboardMobile';
@@ -101,7 +101,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ user, isMobile, navTa
               <img src="/Logo.png" alt="Company Logo" className="dashboard-logo" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: '1.01rem', marginBottom: 2 }}>{user?.blind_full_name || user?.first_name || 'User Name'}</div>
-                <div style={{ fontSize: '0.95rem', color: '#7f8c8d' }}>{user?.email || 'user@email.com'}</div>
               </div>
             </div>
             {/* Menu: Navigation links and actions */}
@@ -158,8 +157,8 @@ const Dropbar: React.FC<{ navTabs: typeof navTabs }> = ({ navTabs }) => {
       <ul style={{ display: 'flex', alignItems: 'center', gap: 18, listStyle: 'none', margin: 0, padding: 0 }}>
         {navTabs.map(tab => (
           <li key={tab.key}>
-            <a
-              href={`/${tab.key}`}
+            <Link
+              to={`/${tab.key}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -177,7 +176,7 @@ const Dropbar: React.FC<{ navTabs: typeof navTabs }> = ({ navTabs }) => {
             >
               <i className={tab.icon} style={{ fontSize: '1.1rem', color: '#fff' }}></i>
               <span>{tab.label}</span>
-            </a>
+            </Link>
           </li>
         ))}
       </ul>
@@ -188,7 +187,7 @@ const Dropbar: React.FC<{ navTabs: typeof navTabs }> = ({ navTabs }) => {
 const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpanded }) => {
   const [data, setData] = useState<any>(null);
   const [inactiveTimeoutId, setInactiveTimeoutId] = useState<NodeJS.Timeout | null>(null);
-  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
+  const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutes (can adjust to 15*60*1000 for 15 mins)
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   // Removed unused sidebarOpen state
@@ -215,9 +214,21 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
   }, [userMenuOpen, isMobile]);
 
   useEffect(() => {
+    // Check token validity on mount
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/login';
+      return;
+    }
     fetchDashboardData()
       .then((result) => {
-        setData(result);
+        // If backend says token expired, force logout
+        if (result && (result.error === 'Unable to load dashboard. Please try again.' || result.error === 'Unauthorized' || result.error?.name === 'TokenExpiredError')) {
+          sessionStorage.removeItem('token');
+          window.location.href = '/login';
+        } else {
+          setData(result);
+        }
       })
       .catch((err) => {
         setData({ error: 'Unable to load dashboard. Please try again.' });
@@ -228,15 +239,12 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
     const resetInactivityTimer = () => {
       if (inactiveTimeoutId) clearTimeout(inactiveTimeoutId);
       const timeoutId = setTimeout(() => {
-        setData('INACTIVE_DEEP_LOADING');
+        // On inactivity, remove token and force logout
+        sessionStorage.removeItem('token');
+        setData('INACTIVE_LOGOUT');
         setTimeout(() => {
-          const token = sessionStorage.getItem('token');
-          if (!token) {
-            window.location.href = '/';
-          } else {
-            window.location.reload();
-          }
-        }, 4000);
+          window.location.href = '/login';
+        }, 2000);
       }, INACTIVITY_LIMIT);
       setInactiveTimeoutId(timeoutId);
     };
@@ -364,8 +372,7 @@ const Dashboard: React.FC<DashboardProps> = ({ sidebarExpanded, setSidebarExpand
                 </span>
               </div>
               <div style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', color: '#fff' }}>
-                <i className="fas fa-envelope" style={{ marginRight: 6 }}></i>
-                {user?.email || '-'}
+                {/* Removed email display for patient section as requested */}
               </div>
               <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)', border: '1.5px solid rgba(255,255,255,0.35)', borderRadius: '999px', padding: '0.5rem 1.5rem', fontSize: '1rem', color: '#fff', fontWeight: 600, boxShadow: '0 2px 8px rgba(44,62,80,0.10)', letterSpacing: 0.2, minWidth: 220 }}>
                 <i className="fas fa-person-walking-with-cane" style={{ marginRight: 10, fontSize: '1.2em' }}></i>

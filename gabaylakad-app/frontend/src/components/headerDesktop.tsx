@@ -119,7 +119,7 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
             onClick={() => setUserMenuOpen((open) => !open)}
             style={{ background: 'none', border: '2px solid #8e44ad', padding: 0, borderRadius: '50%' }}
           >
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.blind_full_name || user?.first_name || 'User')}&background=8e44ad&color=fff`} alt="Avatar" className="desktop-profile-avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', boxShadow: '0 2px 8px rgba(44,62,80,0.10)' }} />
+            <img src={user?.avatar ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.first_name || '') + ' ' + (user?.last_name || ''))}&background=8e44ad&color=fff`} alt="Avatar" className="desktop-profile-avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', boxShadow: '0 2px 8px rgba(44,62,80,0.10)' }} />
           </button>
           {/* Dropdown menu */}
           {userMenuOpen && (
@@ -141,9 +141,9 @@ const HeaderDesktop: React.FC<HeaderDesktopProps> = ({ user }) => {
             >
               {/* User info */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.8rem 1.1rem', borderBottom: '1px solid #f0f0f0', background: 'rgba(41,128,185,0.07)' }}>
-                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.blind_full_name || user?.first_name || 'User')}&background=8e44ad&color=fff`} alt="Avatar" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }} />
+                <img src={user?.avatar ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.first_name || '') + ' ' + (user?.last_name || ''))}&background=8e44ad&color=fff`} alt="Avatar" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', marginRight: 8 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '1.01rem', marginBottom: 2 }}>{user?.blind_full_name || user?.first_name || 'User Name'}</div>
+                  <div style={{ fontWeight: 700, fontSize: '1.01rem', marginBottom: 2 }}>{(user?.first_name || '') + ' ' + (user?.last_name || '')}</div>
                   <div style={{ fontSize: '0.95rem', color: '#7f8c8d' }}>{user?.email || 'user@email.com'}</div>
                 </div>
               </div>

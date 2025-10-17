@@ -1,14 +1,14 @@
-/* Move only the patient profile card downward on desktop */
+
 .dashboard-profile-card {
   
   margin-top: 83px;
-}
+} 
 @media (max-width: 600px) {
   .dashboard-header .dashboard-logo {
     width:65px !important;
     height: 65px !important;
     max-width: 65px !important;
-    
+  
     max-height: 65px !important;
     object-fit: contain !important;
     display: block !important;
@@ -1455,10 +1455,8 @@ html, body {
 
   overflow-x: hidden;
 }
-/* Removed global fixed positioning for .dashboard-header. Only set in desktop media query below. */
-.dashboard-container {
-  /* Duplicate block removed. See unified block above. */
-}
+
+
 @media (max-width: 600px) {
   html, body {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
